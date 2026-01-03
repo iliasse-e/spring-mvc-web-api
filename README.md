@@ -15,9 +15,9 @@ Une API Web peut ainsi être utilisée dans des contextes très divers :
 
 ## Support pour les formats JSON et XML
 
-Nous allons voir que le développement d’API Web suppose de produire des réponses dans des formats comme le JSON ou le XML.
+Nous allons voir que le développement d’API Web suppose de produire des réponses dans des formats comme le ``JSON`` ou le ``XML``.
 
-Pour une application avec Spring Boot, la configuration par défaut inclue une prise en charge du format JSON. Pour le modèle `XML`, il faut ajouter la dépendance `jackson-dataformat-xml`.
+Pour une application avec Spring Boot, la configuration par défaut inclue une prise en charge du format ``JSON``. Pour le modèle `XML`, il faut ajouter la dépendance `jackson-dataformat-xml`.
 
 ```xml
 <dependency>
@@ -26,18 +26,20 @@ Pour une application avec Spring Boot, la configuration par défaut inclue une p
 </dependency>
 ```
 
+
 ## L’annotation @RestController
 
 Une classe annotée avec ``@RestController`` indique qu’il s’agit d’un contrôleur spécialisé pour le développement d’API Web. ``@RestController`` est simplement une annotation qui regroupe ``@Controller`` et ``@ResponseBody``. Il s’agit donc d’un contrôleur dont les méthodes retournent par défaut les données à renvoyer au client plutôt qu’un identifiant de vue.
 
 > [!NOTE]
-> Le qualificatif de REST pour ce contrôleur est malheureusement le résultat d’une confusion (courante) des développeurs qui mélangent REST avec API Web (et API Web avec JSON).
+> Le qualificatif de REST pour ce contrôleur est malheureusement le résultat d’une confusion (courante) des développeurs qui mélangent REST avec API Web (et API Web avec ``JSON``).
 REST est l’ensemble des contraintes sur lesquelles sont basés le Web et le protocole HTTP.
 Il aurait été plus judicieux de nommer cette annotation `@WebApiController`.
 
+
 ## Un contrôleur pour une API Web
 
-Nous pouvons très facilement déclarer un contrôleur pour obtenir une représentation JSON d’une instance de la classe Item (créé dans l'appli) :
+Nous pouvons très facilement déclarer un contrôleur pour obtenir une représentation ``JSON`` d’une instance de la classe Item (créé dans l'appli) :
 
 ```java
 @RestController
@@ -59,10 +61,10 @@ public class ItemController {
 > [!NOTE]
 > De base Spring fournit l'annotation `@RequestMapping` mais il est plus facile d'utiliser les méthodes comme `@GetMapping` (@Post..., @Delete...).
 
-Une classes annotée avec ``@RestController`` fonctionne de la même façon qu’une classe annotée avec ``@Controller``. Notez cependant que l’attribut ``produces`` de l’annotation ``@GetMapping`` a été positionné à ``"application/json"``. Cela signifie que Spring Web MVC va convertir l’instance de la classe Item retournée par la méthode en une représentation JSON avant de l’envoyer au client.
+Une classes annotée avec ``@RestController`` fonctionne de la même façon qu’une classe annotée avec ``@Controller``. Notez cependant que l’attribut ``produces`` de l’annotation ``@GetMapping`` a été positionné à ``"application/json"``. Cela signifie que Spring Web MVC va convertir l’instance de la classe Item retournée par la méthode en une représentation ``JSON`` avant de l’envoyer au client.
 
 > [!NOTE]
-> La sérialisation JSON sera réalisée par la bibliothèque Jackson.
+> La sérialisation ``JSON`` sera réalisée par la bibliothèque Jackson.
 
 Si nous déployons sur notre serveur local notre application, nous pouvons utiliser le programme cURL pour interroger notre API :
 
@@ -71,6 +73,7 @@ curl http://localhost:8080/api/item
 
 {"name":"Weird stuff","code":"XV-32","quantity":10}
 ```
+
 
 ## La négociation de contenu
 
@@ -89,6 +92,7 @@ curl -H "Accept: application/xml" http://localhost:8080/api/item
 
 <Item><name>Weird stuff</name><code>XV-32</code><quantity>10</quantity></Item>
 ```
+
 
 ## L’envoi de données
 
@@ -113,7 +117,7 @@ public class ItemController {
 Dans l’exemple ci-dessus, le contrôleur accepte une requête ``POST`` pour le chemin ``/api/items`` contenant des données au format ``JSON``. Le paramètre ``item`` dispose de l’annotation ``@RequestBody``. Donc Spring Web MVC va considérer que ce paramètre représente le corps de la requête. **Il va donc tenter de convertir le document ``JSON`` en une instance de la classe ``Item``.**
 
 > [!NOTE]
-> La désérialisation du document JSON vers l’objet Java sera réalisée par la bibliothèque Jackson.
+> La désérialisation du document ``JSON`` vers l’objet Java sera réalisée par la bibliothèque Jackson.
 
 Comme pour le contenu d’une réponse, nous pouvons autoriser plusieurs formats de représentation dans un contrôleur en fournissant une liste à l’attribut ``consumes`` :
 
@@ -125,6 +129,7 @@ public void createItem(@RequestBody Item item) {
     // ...
 }
 ```
+
 
 ## La réponse
 
@@ -179,9 +184,35 @@ Pourquoi utiliser ResponseEntity ?
     Par exemple, renvoyer un statut 404 avec un message personnalisé.
 
 
-```java
+## RestControllerAdvice
 
+Comme pour les contrôleurs de base, il est possible d’ajouter dans un contrôleur pour une API Web des méthodes pour gérer les exceptions (annotées avec ``@ExceptionHandler``), des méthodes de binder (annotées avec ``@InitBinder``) et des méthodes de modèle (annotées avec ``@ModelAttribute``).
+
+Afin de réutiliser ces méthodes à travers plusieurs contrôleurs, il est aussi possible de les regrouper dans une classe annotée avec ``@RestControllerAdvice``. Comme pour l’annotation ``@RestController``, ``@RestControllerAdvice`` est une annotation composée de ``@ControllerAdvice`` et de ``@ResponseBody``. Concrètement, elle change l’interprétation par défaut des méthodes de gestion des exceptions, en considérant que la valeur de retour correspond à la réponse à sérialiser directement dans la représentation de la réponse (le plus souvent pour créer un document ``XML`` ou ``JSON``).
+
+
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<String> handleIllegalArgument(HttpMessageNotReadableException ex) {
+        return new ResponseEntity<>("Invalid input: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+}
 ```
+
+A partir de l'exemple ci dessus, si le controleur lève une Exception de type `HttpMessageNotReadableException` alors le handler retournera sa réponse.`
+
+*Exemple : Invoquer le endpoint /item POST en envoyant un payload corrumpu*
+
+> [!NOTE]
+> `@RestControllerAdvice` est la combinaison entre :
+> - ``@ControllerAdvice`` : Handler global des Exceptions
+> - `@ResponseBody` : Assure une réponse en JSON au lieu d'une vue
+
+
+## Les annotations Jackson
 
 ```java
 
