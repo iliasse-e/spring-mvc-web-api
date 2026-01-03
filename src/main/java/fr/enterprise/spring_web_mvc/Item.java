@@ -3,6 +3,12 @@ package fr.enterprise.spring_web_mvc;
 public class Item {
 
   public Item() {};
+
+  public Item(String name, String code, int quantity) {
+    this.name = name;
+    this.code = code;
+    this.quantity = quantity;
+  };
   
   private String name;
 

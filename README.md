@@ -89,3 +89,100 @@ curl -H "Accept: application/xml" http://localhost:8080/api/item
 
 <Item><name>Weird stuff</name><code>XV-32</code><quantity>10</quantity></Item>
 ```
+
+## L’envoi de données
+
+Les API Web sont souvent utilisées pour effectuer des opérations modifiant l’état du serveur (création, modification, suppression). Pour ces cas, il est toujours possible d’envoyer au serveur des paramètres d’URI et/ou des données comme un formulaire HTML. Cependant, comme les formats ``JSON`` et ``XML`` sont souvent utilisés comme représentation dans les réponses du serveur, il paraît cohérent de permettre à un client d’envoyer des données au serveur dans un de ces formats.
+
+Pour autoriser cela, il suffit d’utiliser l’attribut ``consumes`` pour les annotations de type ``@RequestMapping`` conjointement avec l’annotation ``@RequestBody``.
+
+```java
+@RestController
+@RequestMapping("/api")
+public class ItemController {
+
+    @PostMapping(path="/items", consumes="application/json") // Pour dire qu'on envoi en format JSON
+    @ResponseStatus(code=HttpStatus.CREATED)
+    public void createItem(@RequestBody Item item) { // Pour dire qu'on veut que le JSON soit convertit à ce modèle là d'objet
+        // ...
+    }
+
+}
+```
+
+Dans l’exemple ci-dessus, le contrôleur accepte une requête ``POST`` pour le chemin ``/api/items`` contenant des données au format ``JSON``. Le paramètre ``item`` dispose de l’annotation ``@RequestBody``. Donc Spring Web MVC va considérer que ce paramètre représente le corps de la requête. **Il va donc tenter de convertir le document ``JSON`` en une instance de la classe ``Item``.**
+
+> [!NOTE]
+> La désérialisation du document JSON vers l’objet Java sera réalisée par la bibliothèque Jackson.
+
+Comme pour le contenu d’une réponse, nous pouvons autoriser plusieurs formats de représentation dans un contrôleur en fournissant une liste à l’attribut ``consumes`` :
+
+
+```java
+@PostMapping(path="/items", consumes={"application/json", "application/xml"})
+@ResponseStatus(code=HttpStatus.CREATED)
+public void createItem(@RequestBody Item item) {
+    // ...
+}
+```
+
+## La réponse
+
+Par défaut, un contrôleur pour une API Web retourne un code statut HTTP ``200`` si la méthode retourne un objet ou ``204`` (No Content) si la méthode retourne ``void``.
+Si on désire positionner un code statut particulier, il est possible d’utiliser l’annotation ``@ResponseStatus`` avec un code particulier parmi l'Enum ``HttpStatus``.
+
+```java
+@PostMapping(path="/items", consumes={"application/json", "application/xml"})
+@ResponseStatus(code=HttpStatus.CREATED)
+public void createItem(@RequestBody Item item) {
+    // ...
+}
+```
+
+Si on désire contrôler plus finement le contenu de la réponse, il est possible de retourner un objet de type ``ResponseEntity<T>``.
+
+```java
+@RestController
+@RequestMapping("/api")
+public class ItemController {
+
+    @PostMapping(path="/items", consumes="application/json", produces="application/json")
+    public ResponseEntity<Item> createItem(@RequestBody Item item,
+                                           UriComponentsBuilder uriBuilder) {
+
+        // ...
+
+        URI uri = uriBuilder.path("/api/items/{code}").buildAndExpand(item.getCode()).toUri();
+        return ResponseEntity.created(uri).body(item);
+    }
+
+}
+```
+
+Un objet ``ResponseEntity<T>`` peut être créé à partir de méthodes statiques correspondant aux cas d’utilisation les plus courants en HTTP. Dans l’exemple ci-dessus, la méthode ``ResponseEntity<T>.created`` permet de créer une réponse avec un code statut ``201`` (Created) et un en-tête `Location` contenant le lien vers la ressource créée sur le serveur. Ainsi la méthode ``ResponseEntity<T>.created`` attend en paramètre l’``URI`` de la ressource. Dans l’exemple ci-dessus, on accède à une instance de ``UriComponentsBuilder`` qui est fournie par Spring Web MVC afin de nous aider à construire une ``URI`` pour une ressource du serveur.
+
+> [!NOTE]
+> **ResponseEntity** fait partie du module Spring Web.
+> Elle permet de contrôler à la fois :
+>    - Le code de statut HTTP ( par exemple, 200 OK, 404 Not Found , etc)
+>    - Les en-têtes HTTP.
+>    - Le corps de la réponse.
+
+
+> [!TIP]
+Pourquoi utiliser ResponseEntity ?
+>   1. **Flexibilité :**
+    Vous pouvez facilement définir les status HTTP et personnaliser les en-têtes.
+>   2. **Bonne pratique REST :**
+    Permet de mieux structurer les réponses pour les API RESTful.
+>   3. **Gestion d’erreurs améliorée :**
+    Par exemple, renvoyer un statut 404 avec un message personnalisé.
+
+
+```java
+
+```
+
+```java
+
+```
