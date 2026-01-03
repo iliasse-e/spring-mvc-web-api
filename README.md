@@ -214,6 +214,98 @@ A partir de l'exemple ci dessus, si le controleur lève une Exception de type `H
 
 ## Les annotations Jackson
 
-```java
+Lors de l'utilisation de la bibliothèque Jackson pour convertir les objets Java en ``XML`` ou ``JSON``, on peut utiliser des annotations dans la déclaration des objets afin de modifier le comportement par défaut de la sérialisation/désérialisation.
 
+> [!ASTUCE]
+> Pour tester la conversion d’un objet Java en JSON via Jackson vous pouvez écrire un programme (ou un test) en utilisant une instance de la classe ``ObjectMapper`` fournie par Jackson :  
+```java
+public class JacksonSerialisation {
+
+    public static void main(String[] args) throws Exception {
+        Object obj = new Item();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        System.out.println(objectMapper.writeValueAsString(obj));
+    }
+
+}
+```
+
+> [!ASTUCE]
+> Pour tester la conversion d’un objet Java en XML via Jackson, il faut utiliser la classe ``XmlMapper`` fournie par Jackson : 
+```java
+public class JacksonSerialisation {
+
+public static void main(String[] args) throws Exception {
+    Object obj = new Item();
+
+    XmlMapper xmlMapper = new XmlMapper();
+    System.out.println(xmlMapper.writeValueAsString(obj));
+}
+
+}
+```
+
+Parmi les annotations utiles, on peut citer :
+
+``@JsonProperty``
+
+    Cette annotation ajoutée à un attribut permet de spécifier le nom de la propriété dans le document JSON ou le nom de l’élément dans un document XML.
+
+``@JsonIgnore``
+
+    Cette annotation ajoutée à un attribut permet d’exclure cet attribut de la sérialisation/désérialisation.
+
+``@JsonRootName``
+
+    Cette annotation ajoutée sur une classe permet de spécifier le nom de l’élément s’il doit apparaître à la racine du document. Cette annotation est surtout utile pour la génération de document XML afin de changer le nom de l’élément racine.
+
+``@JsonPropertyOrder``
+
+    Cette annotation ajoutée à une classe permet de fixer l’ordre des éléments dans le document.
+
+``@JsonView``
+
+    Cette annotation ajoutée à un attribut permet de définir une ou des vues JSON pour lesquelles cet attribut doit apparaître (Cf exemple ci-dessous).
+
+
+*[Documentation Jackson](https://github.com/FasterXML/jackson-annotations/wiki/Jackson-Annotations)*
+
+
+Reprenons notre classe Item en ajoutant des annotations Jackson :
+
+```java
+@JsonRootName("item")
+@JsonPropertyOrder({"nom", "code", "quantite"})
+public class Item {
+
+    @JsonProperty("nom")
+    private String name;
+
+    private String code;
+
+    @JsonProperty("quantite")
+    private int quantity;
+
+    // Getters/setters omis
+
+}
+```
+
+La sérialisation avec Jackson d’un objet de la classe Item donnera :
+
+```json
+{"nom":"Weird stuff","code":"XV-35","quantite":1}
+```
+
+```xml
+<item><nom>Weird stuff</nom><code>XV-35</code><quantite>1</quantite></item>
+```
+
+## Les vues JSON
+
+```json
+```
+
+```json
 ```
