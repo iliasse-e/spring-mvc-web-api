@@ -10,7 +10,7 @@ public class ItemController {
 
   //@RequestMapping(method = RequestMethod.GET, path = "/item", produces= "application/json") 
   // Exemple de l'ancienne annotation
-  @GetMapping(path = "/item", produces= "application/json")
+  @GetMapping(path = "/item", produces= {"application/json", "application/xml"})
   Item getItem() {
     Item item = new Item();
     item.setName("Plaid polaire");

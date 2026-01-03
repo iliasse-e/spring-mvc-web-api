@@ -17,7 +17,14 @@ Une API Web peut ainsi être utilisée dans des contextes très divers :
 
 Nous allons voir que le développement d’API Web suppose de produire des réponses dans des formats comme le JSON ou le XML.
 
-Pour une application avec Spring Boot, la configuration par défaut inclue une prise en charge de ces formats de représentation. Il n’y a donc aucune configuration particulière à réaliser (la dépendance jackson pour les projet sans Spring boot).
+Pour une application avec Spring Boot, la configuration par défaut inclue une prise en charge du format JSON. Pour le modèle `XML`, il faut ajouter la dépendance `jackson-dataformat-xml`.
+
+```xml
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-xml</artifactId>
+</dependency>
+```
 
 ## L’annotation @RestController
 
@@ -59,10 +66,26 @@ Une classes annotée avec ``@RestController`` fonctionne de la même façon qu�
 
 Si nous déployons sur notre serveur local notre application, nous pouvons utiliser le programme cURL pour interroger notre API :
 
-```java
+```bash
 curl http://localhost:8080/api/item
 
 {"name":"Weird stuff","code":"XV-32","quantity":10}
 ```
 
 ## La négociation de contenu
+
+HTTP permet la négociation de contenu proactive. Cela signifie qu’un client peut envoyer ses préférences au serveur. Ce dernier doit répondre au mieux en fonction des préférences reçues et de ses capacités. Une négociation possible porte sur le format de représentation. Cela peut s’avérer utile pour une API Web destinée à des clients très divers. Par exemple, certains clients peuvent privilégier le ``XML`` et d’autres le ``JSON``.
+
+La négociation proactive pour le type de représentation est réalisée par le client qui envoie dans sa requête un en-tête ``Accept`` donnant la liste des types MIME qu’il préfère. Avec Spring Web MVC, cette négociation est automatiquement gérée par le contrôleur grâce à l'attribut ``produces``.
+
+```java
+@GetMapping(path="/item", produces= {"application/json", "application/xml"})
+```
+
+Par défaut, ce contrôleur produit toujours du JSON (car le type MIME JSON est placé en premier dans la liste) mais un client peut indiquer qu’il préfère une représentation XML grâce à l’en-tête ``Accept`` :
+
+```bash
+curl -H "Accept: application/xml" http://localhost:8080/api/item
+
+<Item><name>Weird stuff</name><code>XV-32</code><quantity>10</quantity></Item>
+```
