@@ -10,12 +10,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.annotation.JsonView;
+
+import fr.enterprise.spring_web_mvc.interfaces.ItemViewWithoutQuantity;
 
 @RestController
 @RequestMapping("/item")
-public class ItemController {
-
+public class ItemController extends ResponseEntityExceptionHandler {
 
   //@RequestMapping(method = RequestMethod.GET, path = "/item", produces= "application/json") 
   // Exemple de l'ancienne annotation
@@ -29,6 +33,7 @@ public class ItemController {
   }
 
   @PostMapping(consumes = "application/json", produces="application/json")
+  @JsonView(ItemViewWithoutQuantity.class)
   ResponseEntity<Item> addItem(@RequestBody Item item, UriComponentsBuilder uriBuilder) {
 
     URI uri = uriBuilder.path("/api/item/{code}").buildAndExpand(item.getCode()).toUri();

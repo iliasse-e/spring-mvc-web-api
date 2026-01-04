@@ -216,7 +216,7 @@ A partir de l'exemple ci dessus, si le controleur lève une Exception de type `H
 
 Lors de l'utilisation de la bibliothèque Jackson pour convertir les objets Java en ``XML`` ou ``JSON``, on peut utiliser des annotations dans la déclaration des objets afin de modifier le comportement par défaut de la sérialisation/désérialisation.
 
-> [!ASTUCE]
+> [!NOTE]
 > Pour tester la conversion d’un objet Java en JSON via Jackson vous pouvez écrire un programme (ou un test) en utilisant une instance de la classe ``ObjectMapper`` fournie par Jackson :  
 ```java
 public class JacksonSerialisation {
@@ -231,7 +231,7 @@ public class JacksonSerialisation {
 }
 ```
 
-> [!ASTUCE]
+> [!NOTE]
 > Pour tester la conversion d’un objet Java en XML via Jackson, il faut utiliser la classe ``XmlMapper`` fournie par Jackson : 
 ```java
 public class JacksonSerialisation {
@@ -302,10 +302,103 @@ La sérialisation avec Jackson d’un objet de la classe Item donnera :
 <item><nom>Weird stuff</nom><code>XV-35</code><quantite>1</quantite></item>
 ```
 
-## Les vues JSON
+### Les vues JSON
 
-```json
+L’utilisation de vues JSON permet de ne convertir qu’une partie de l’objet. Pour cela, nous créons des interfaces qui servent à désigner des vues. Pour notre exemple, nous allons créer les interfaces ``ItemViewWithoutQuantity`` et ``ItemViewWithQuantity`` :
+
+```java
+package dev.gayerie;
+
+public interface ItemViewWithoutQuantity {
+
+}
+
+package dev.gayerie;
+
+public interface ItemViewWithQuantity extends ItemViewWithoutQuantity {
+
+}
 ```
 
+Notez que ``ItemViewWithQuantity`` hérite de ``ItemViewWithoutQuantity`` car dans notre exemple nous voulons simplement exclure dans certains cas l’attribut ``quantity`` de la sérialisation. Nous pouvons revoir la définition de la classe Item en ajoutant des annotations ``@JsonView`` pour attribuer une vue à chaque attribut :
+
+```java
+@JsonRootName("item")
+@JsonPropertyOrder({"nom", "code", "quantite"})
+public class Item {
+
+    @JsonProperty("nom")
+    @JsonView(ItemViewWithoutQuantity.class)
+    private String name;
+
+    @JsonView(ItemViewWithoutQuantity.class)
+    private String code;
+
+    @JsonProperty("quantite")
+    @JsonView(ItemViewWithQuantity.class)
+    private int quantity;
+
+    // Getters/setters omis
+
+}
+```
+
+Les vues JSON son facilement utilisables dans un contrôleur Spring car on peut préciser la vue grâce à l’annotation ``@JsonView`` sur la valeur de retour d’une méthode :
+
+```java
+
+@RestController
+@RequestMapping("/api")
+public class ItemController extends ResponseEntityExceptionHandler{
+
+    @PostMapping(path="/items", consumes="application/json", produces="application/json")
+    @JsonView(ItemViewWithoutQuantity.class)
+    public ResponseEntity<Item> createItem(@RequestBody Item item, UriComponentsBuilder uriBuilder) {
+        System.out.println(item.getCode());
+        URI uri = uriBuilder.path("/api/item/{code}").buildAndExpand(item.getCode()).toUri();
+        return ResponseEntity.created(uri).body(item);
+    }
+
+}
+```
+
+L’appel à cette API produira le document :
+
 ```json
+{"nom":"Nom de l'item","code":"Code de l'item"}
+```
+
+L’attribut ``quantite`` n’est pas présent dans le document JSON car l’annotation ``@JsonView`` limite la sérialisation à la vue ``ItemViewWithoutQuantity``.
+
+## Implémentation d’un client
+
+Spring Web MVC fournit la classe ``RestTemplate`` (Spring 5 introduit `WebClient`) permettant d’effectuer des requêtes HTTP. Cette classe permet de convertir les objets Java au format JSON ou XML pour une requête (et inversement de transformer un réponse du serveur au format JSON ou XML en instance d’un objet Java).
+
+En reprenant notre exemple précédent pour la création d’un Item, on peut écrire l’application client suivante :
+
+
+```java
+public class WebApiClient {
+
+    public static void main(String[] args) throws Exception {
+        RestTemplate client = new RestTemplate();
+        URI uri = new URI("http://localhost:8080/myapp/api/items");
+
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Content-type", "application/json");
+
+        Item item = new Item();
+        item.setCode("1337");
+        item.setName("weird stuff");
+        item.setQuantity(1);
+
+        HttpEntity<Item> entity = new HttpEntity<Item>(item, requestHeaders);
+        ResponseEntity<Item> responseEntity = client.postForEntity(uri, entity, Item.class);
+
+        System.out.println(responseEntity.getHeaders().getLocation());
+        Item itemResultat = responseEntity.getBody();
+        System.out.println(itemResultat.getCode());
+    }
+
+}
 ```

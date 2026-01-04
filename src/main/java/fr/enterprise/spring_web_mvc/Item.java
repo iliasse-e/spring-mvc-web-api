@@ -1,6 +1,23 @@
 package fr.enterprise.spring_web_mvc;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+
+import fr.enterprise.spring_web_mvc.interfaces.ItemViewWithQuantity;
+import fr.enterprise.spring_web_mvc.interfaces.ItemViewWithoutQuantity;
+
 public class Item {
+  
+  @JsonProperty("nom")
+  @JsonView(ItemViewWithoutQuantity.class)
+  private String name;
+
+  @JsonView(ItemViewWithoutQuantity.class)
+  private String code;
+
+  @JsonProperty("quantite")
+  @JsonView(ItemViewWithQuantity.class)
+  private int quantity;
 
   public Item() {};
 
@@ -9,12 +26,6 @@ public class Item {
     this.code = code;
     this.quantity = quantity;
   };
-  
-  private String name;
-
-  private String code;
-
-  private int quantity;
 
   public String getName() {
     return this.name;
